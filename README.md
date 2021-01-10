@@ -2,4 +2,4 @@
 Esp32 5 Ch. Thermocouple System
 Uses Station + AP WIFI mode. 
 
-https://github.com/cgulick/image.jpg?raw=true
+
