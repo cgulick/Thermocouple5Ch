@@ -1,0 +1,1049 @@
+
+<!doctype html>
+<html>
+
+<body onload="TCDasOnload()">
+
+<h3>ESP32 WIFI Station + AP TC DAS</h3>
+
+<head>
+	<title>ESP32 Thermocouple DAS</title>
+	<script src="Chart.min.js"></script>
+	<script src="utils.js"></script>
+	<script src="gauge.min.js"></script>
+</head>
+<body style="background: white">
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->	
+<style>
+    .SliderContainer1
+      {
+          display:flex;
+      }
+
+    .SliderContainer1 div
+      {
+          padding:70;
+      }
+    
+    .SecBetweenSamplesContainer
+    {
+      flex:.5;
+      order:1;
+    }
+    
+    .TempHighSliderContainer
+    {
+      flex:1;
+      order:2;
+    }
+    
+    .TempLowSliderContainer
+    {
+      flex:1;
+      order:3;
+    }
+</style>
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+ 
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+<style>
+      .RgbBarCanvas 
+      {
+         display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+</style>
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+  
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+<style>
+  .slider 
+  {
+    -webkit-appearance: none;
+    /*width: 100%;*/
+    height: 10px;
+    background: #95a8ad;
+    outline: solid;
+    outline-width:1px;
+    
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+  }
+  
+  .slider:hover 
+  {
+    opacity: 1;
+  }
+  
+  .slider::-webkit-slider-thumb 
+  {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 10px;
+    background: #b6d0d6;
+    cursor: pointer;
+  }
+  
+  .slider::-moz-range-thumb 
+  {
+    width: 25px;
+    height: 10px;
+    background: #34cf04;
+    cursor: pointer;
+  }	
+</style>
+
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+
+
+	
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+<div class="SliderContainer1">
+
+    <div class="SecBetweenSamplesContainer">
+        <input type="range" min="1" max="5" value="1" class="slider" id="SPSecSlider">
+        <label>Sec/Sample: <span id="SPSec"></span></label>
+    </div>
+
+    <div class="TempHighSliderContainer">
+        <label>Temp High:  <span id="TempHighValue"></span></label>
+        <input type="range" min="001" max="500" value="90" class="slider" id="TempHighSlider">
+    </div>
+
+    <div class="TempLowSliderContainer">
+        <label>Temp Low:   <span id="TempLowValue"></span></label>
+        <input type="range" min="1" max="500" value="90" class="slider" id="TempLowSlider">
+    </div>
+
+</div>
+
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+
+<div class = "RgbBarCanvas">
+        <canvas id="rgbbar" width="600" height="20" style="border:1px solid #d3d3d3;">
+    Your browser does not support the HTML5 canvas tag.</canvas>
+</div>  
+
+<canvas id="myChart" width="500px" height="150px"></canvas>
+	<style>
+
+	canvas{
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	 body {
+      min-width: 500px;
+    	max-width: 1500px;
+    	height: 400px;
+      margin: 0 auto;
+    }
+	
+    h2 {
+      font-family: Arial;
+      font-size: 3.5rem;
+      text-align: center;
+    }
+	
+	</style>
+	
+	
+<style>
+    .ButtonContainer
+      {
+          display:flex;
+		  
+      }
+
+    .ButtonContainer div
+      {
+          padding:70;
+      }
+    
+    .FCSelectButtonContainer
+    {
+      flex:1;
+      order:1;
+    }
+    
+    .RGBUpdateButtonContainer
+    {
+      flex:1;
+      order:2;
+    }
+    
+    .PrintSensorDataContainer
+    {
+      flex:1;
+      order:3;
+    }
+	
+    .PrintBatteryVDataContainer
+    {
+      flex:1;
+      order:4;
+    }
+
+    .PrintBatteryIDataContainer
+    {
+      flex:1;
+      order:5;
+    }
+    .PrintHumidityDataContainer
+    {
+      flex:1;
+      order:6;
+    }
+    .PrintElapsedTimeDataContainer
+    {
+      flex:1;
+      order:7;
+    }	
+	
+</style>
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->	
+
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+<div class="ButtonContainer">
+
+    <div class="FCSelectButtonContainer">
+        <button id="FCSelect">Fah/Cel Select</button>
+    </div>
+
+    <div class="RGBUpdateButtonContainer">
+        <button id="RGBUpdate">RGB H/L Update</button>
+    </div>
+
+    <div class="PrintSensorDataContainer">
+        <button id="PrintSensorData">Print Sensor Data</button>
+    </div>
+	
+	<div class="PrintBatteryVDataContainer">
+        <button id="PrintBatteryVData">Print Bat V Data</button>
+    </div>
+
+    <div class="PrintBatteryIDataContainer">
+        <button id="PrintBatteryIData">Print Bat I Data</button>
+    </div>
+	
+    <div class="PrintHumidityDataContainer">
+        <button id="PrintHumidityData">Print Hum Data</button>
+    </div>
+	
+    <div class="PrintElapsedTimeDataContainer">
+        <button id="PrintElapsedTimeData">Print Time Data</button>
+    </div>
+
+</div>
+
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+
+<!----------------------------------------------------------------->
+<!----------------------------------------------------------------->
+
+<!--- add a line break --->
+<br>
+<!--- between buttons and gauges below --->
+
+
+<style>
+    .GaugeLayout
+    {
+	background-color: white;
+      display:flex;
+    }
+    .GaugeLayout div
+    {
+     padding:10;
+    }
+    .BatGaugeCanvas
+{
+      flex:1;
+      order:1;
+}
+.CurGaugeCanvas
+{
+      flex:1;
+      order:2;
+}
+.HumGaugeCanvas
+{
+      flex:1;
+      order:3;
+}
+.TempGaugeCanvas
+{
+      flex:1;
+      order:4;
+}
+</style>
+
+
+<div class="GaugeLayout">
+
+    <div class="BatGaugeCanvas">
+<canvas id="BatCanvas"
+        data-type="radial-gauge"
+        data-width="210"
+        data-height="210"
+        data-units="Volts"
+        data-title="Battery Voltage"
+        data-min-value="0"
+        data-max-value="5"
+        data-major-ticks="[0,1,2,3,4,5]"
+        data-minor-ticks="5"
+        data-stroke-ticks="true"
+        data-highlights='[
+                    {"from": 0, "to": 1, "color": "rgba(255,0,0)"},
+                    {"from": 1, "to": 2, "color": "rgba(255,0,0)"},
+                    {"from": 2, "to": 3, "color": "rgba(255,0,0)"},
+                    {"from": 3, "to": 3.3, "color": " rgb(255, 180, 0)"},
+                    {"from": 3.3, "to": 4.2, "color": "rgba(0, 255, 0,.3)"},
+                    {"from": 4.2, "to": 5, "color": "rgb(255,0,0)"}
+                ]'
+        data-ticks-angle="225"
+        data-start-angle="67.5"
+        data-color-major-ticks="#ddd"
+        data-color-minor-ticks="#ddd"
+        data-color-title="#eee"
+        data-color-units="#ccc"
+        data-color-numbers="#eee"
+        data-color-plate="#222"
+        data-border-shadow-width="0"
+        data-borders="true"
+        data-needle-type="arrow"
+        data-needle-width="3"
+        data-needle-circle-size="7"
+        data-needle-circle-outer="true"
+        data-needle-circle-inner="false"
+        
+        data-color-border-outer="#333"
+        data-color-border-outer-end="#111"
+        data-color-border-middle="#222"
+        data-color-border-middle-end="#111"
+        data-color-border-inner="#111"
+        data-color-border-inner-end="#333"
+        data-color-needle-shadow-down="#333"
+        data-color-needle-circle-outer="#333"
+        data-color-needle-circle-outer-end="#111"
+        data-color-needle-circle-inner="#111"
+        data-color-needle-circle-inner-end="#222"
+        data-value-box-border-radius="0"
+        data-color-value-box-rect="#222"
+        data-color-value-box-rect-end="#333"
+        data-color-Value-Text="#0"
+        
+></canvas>
+</div>
+
+<div class="CurGaugeCanvas">
+<canvas id="CurCanvas" 
+        data-type="radial-gauge"
+        data-width="210"
+        data-height="210"
+        data-units="Milliamps"
+        data-title="Charge Current"
+        data-min-value="0"
+        data-max-value="500"
+        data-major-ticks="[0,100,200,300,400,500]"
+        data-minor-ticks="5"
+        data-stroke-ticks="true"
+        data-highlights='[
+                    {"from": 0, "to": 100, "color": "rgba(0,0,255,.3)"},
+                    {"from": 100, "to": 200, "color": "rgba(30,255,0,.3)"},
+                    {"from": 200, "to": 300, "color": "rgba(30,255,0,.3)"},
+                    {"from": 300, "to": 330, "color": "rgb(30,255,0,.3)"},
+                    {"from": 330, "to": 400, "color": "rgb(30,255,0,.3)"},
+                    {"from": 400, "to": 450, "color": "rgba(255, 180, 0)"},
+                    {"from": 450, "to": 500, "color": "rgba(255,0, 0)"}
+                ]'
+        data-ticks-angle="225"
+        data-start-angle="67.5"
+        data-color-major-ticks="#fff"
+        data-color-minor-ticks="#fff"
+        data-color-title="#fff"
+        data-color-units="#ccc"
+        data-color-numbers="#eee"
+        data-color-plate="#222"
+        data-border-shadow-width="0"
+        data-borders="true"
+        data-needle-type="arrow"
+        data-needle-width="3"
+        data-needle-circle-size="8"
+        data-needle-circle-outer="true"
+        data-needle-circle-inner="false"
+        
+        data-color-border-outer="#333"
+        data-color-border-outer-end="#111"
+        data-color-border-middle="#222"
+        data-color-border-middle-end="#111"
+        data-color-border-inner="#111"
+        data-color-border-inner-end="#333"
+        data-color-needle-shadow-down="#333"
+        data-color-needle-circle-outer="#333"
+        data-color-needle-circle-outer-end="#111"
+        data-color-needle-circle-inner="#111"
+        data-color-needle-circle-inner-end="#222"
+        data-value-box-border-radius="1"
+        data-color-value-box-rect="#222"
+        data-color-value-box-rect-end="#333"
+        data-color-Value-Text="#0"
+        
+></canvas>
+</div>
+
+<div class="HumGaugeCanvas">
+<canvas id="HumCanvas" 
+        data-type="radial-gauge"
+        data-width="210"
+        data-height="210"
+        data-units="%"
+        data-title="Humidity Sensor"
+        data-min-value="0"
+        data-max-value="100"
+        data-major-ticks="[0,10,20,30,40,50,60,70,80,90,100]"
+        data-minor-ticks="2"
+        data-stroke-ticks="true"
+        data-highlights='[
+                    
+                    {"from": 0, "to": 30, "color": "rgba(255, 0, 0, .8)"},
+                    {"from": 30, "to": 50, "color": "rgba(200,245,0, .3)"},
+                    {"from": 50, "to": 80, "color": "rgba(0,255,0, .3)"},
+                    {"from": 80, "to": 100, "color": "rgba(0,0,255, .3)"}
+                ]'
+        data-ticks-angle="225"
+        data-start-angle="67.5"
+        data-color-major-ticks="#ddd"
+        data-color-minor-ticks="#ddd"
+        data-color-title="#eee"
+        data-color-units="#ccc"
+        data-color-numbers="#eee"
+        data-color-plate="#222"
+        data-border-shadow-width="0"
+        data-borders="true"
+        data-needle-type="arrow"
+        data-needle-width="3"
+        data-needle-circle-size="7"
+        data-needle-circle-outer="true"
+        data-needle-circle-inner="false"
+        
+        data-color-border-outer="#333"
+        data-color-border-outer-end="#111"
+        data-color-border-middle="#222"
+        data-color-border-middle-end="#111"
+        data-color-border-inner="#111"
+        data-color-border-inner-end="#333"
+        data-color-needle-shadow-down="#333"
+        data-color-needle-circle-outer="#333"
+        data-color-needle-circle-outer-end="#111"
+        data-color-needle-circle-inner="#111"
+        data-color-needle-circle-inner-end="#222"
+        data-value-box-border-radius="0"
+        data-color-value-box-rect="#222"
+        data-color-value-box-rect-end="#333"
+        data-color-Value-Text="#0"
+        
+        
+></canvas>
+</div>
+
+<div class="TempGaugeCanvas">
+<canvas id="TempCanvas" 
+        data-type="radial-gauge"
+        data-width="210"
+        data-height="210"
+        data-units="C"
+        data-title="Temperature Sensor"
+        data-min-value="-50"
+        data-max-value="100"
+        data-major-ticks="[-50,-40,-30,-20,-10,0,10,20,30,40,50,60,70,80,90,100]"
+        data-minor-ticks="2"
+        data-stroke-ticks="true"
+        data-highlights='[
+                    {"from": -50, "to": 0, "color": "rgba(0,0, 255, .3)"},
+                    {"from": 0, "to": 30, "color": "rgba(255, 0, 0, .3)"},
+                    {"from": 30, "to": 50, "color": "rgba(200,245,0, .3)"},
+                    {"from": 50, "to": 80, "color": "rgba(0,255,0, .3)"},
+                    {"from": 80, "to": 100, "color": "rgba(255,0,0, .3)"}
+                ]'
+        data-ticks-angle="225"
+        data-start-angle="67.5"
+        data-color-major-ticks="#ddd"
+        data-color-minor-ticks="#ddd"
+        data-color-title="#eee"
+        data-color-units="#ccc"
+        data-color-numbers="#eee"
+        data-color-plate="#222"
+        data-border-shadow-width="0"
+        data-borders="true"
+        data-needle-type="arrow"
+        data-needle-width="3"
+        data-needle-circle-size="7"
+        data-needle-circle-outer="true"
+        data-needle-circle-inner="false"
+        
+        data-color-border-outer="#333"
+        data-color-border-outer-end="#111"
+        data-color-border-middle="#222"
+        data-color-border-middle-end="#111"
+        data-color-border-inner="#111"
+        data-color-border-inner-end="#333"
+        data-color-needle-shadow-down="#333"
+        data-color-needle-circle-outer="#333"
+        data-color-needle-circle-outer-end="#111"
+        data-color-needle-circle-inner="#111"
+        data-color-needle-circle-inner-end="#222"
+        data-value-box-border-radius="0"
+        data-color-value-box-rect="#222"
+        data-color-value-box-rect-end="#333"
+        data-color-Value-Text="#0"
+        
+></canvas>
+</div>
+</div>
+	
+	
+</head>
+<body>
+<script>
+
+/*
+ <span id="slider_value2" style="color:red;font-weight:bold;"></span><br>
+<input type="button" value="-" onClick="subtract_one()">
+0 <input type="range" min="0" max="1000" step="1" name="sld6" value=477" onchange="show_value2(this.value)"> 1,000 
+<input type="button" value="+" onClick="add_one()">
+
+and the javascript would be:
+
+function show_value2(x)
+{
+ document.getElementById("slider_value2").innerHTML=x;
+}
+function add_one()
+{
+  document.f.sld6.value=parseInt(document.f.sld6.value)+1;
+  show_value2(document.f.sld6.value);
+}
+function subtract_one()
+{
+  document.f.sld6.value=parseInt(document.f.sld6.value)-1;
+  show_value2(document.f.sld6.value);
+}
+
+
+*/
+
+
+//data-animation-duration="0"
+//        data-animation-rule="linear"
+var SamplesPerSec = 1000;
+
+var slider1 = document.getElementById("SPSecSlider");
+var output = document.getElementById("SPSec");
+output.innerHTML = slider1.value;
+
+slider1.oninput = function() 
+{
+  output.innerHTML = this.value;
+  SamplesPerSec = this.value;
+  
+  //var gauge = document.gauges[0];
+  //gauge.value = this.value;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+var TempIndicatorHigh = 100;
+var slider2 = document.getElementById("TempHighSlider");
+var output2 = document.getElementById("TempHighValue");
+output2.innerHTML = slider2.value;
+
+slider2.oninput = function() 
+{
+  output2.innerHTML = this.value;
+  TempIndicatorHigh = this.value;
+  
+}
+/////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+var TempIndicatorLow = 60;
+var slider3 = document.getElementById("TempLowSlider");
+var output3 = document.getElementById("TempLowValue");
+output3.innerHTML = slider3.value;
+
+slider3.oninput = function() 
+{
+  
+  output3.innerHTML = 500-this.value;
+  TempIndicatorLow = 500-this.value;
+  //if(slider3.value > slider2.value)
+  //{
+	//if(slider3.value < 5000)	slider2.value = slider3.value + 100;
+ //}
+}
+/////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+var main = document.getElementById("rgbbar");
+var render = main.getContext("2d");
+main.width = 600;
+main.height = 20;
+///////////////////////////////////////////////
+
+///////////////////////////////////////////////
+var c = document.getElementById("rgbbar");
+var ctx = c.getContext("2d");
+ 
+var grd = ctx.createLinearGradient(0, 0, 600, 0);
+grd.addColorStop(0, "red");
+grd.addColorStop("0.25", "yellow");
+grd.addColorStop("0.5", "green");
+grd.addColorStop("0.75", "cyan");
+grd.addColorStop(1, "blue");
+ 
+ctx.fillStyle = grd;
+ctx.fillRect(0, 0, 600, 20); 
+
+////////////////////////////////////////////////////////////////////////////////////////
+//color rgb bar end
+////////////////////////////////////////////////////////////////////////////////////////
+
+var myChart;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+ var  PrintSensorFlag = 0;
+ var  PrintBatteryVFlag = 0;
+ var  PrintBatteryIFlag = 0;
+ var  PrintHumidityFlag = 0;
+ var  PrintElapsedTimeFlag = 0;
+ var SerialPrintFlags = 0;
+ 
+
+
+var TCLabelNamearr = ["TC-1","TC-2","TC-3","TC-4","TC-5"];
+var TraceColorarr  = ['rgb(255, 18, 237)','rgb(0,255,0)','rgb(0,0,255)','rgb(128,0,44)','rgb(237, 18, 237)',];
+var TempData_arr    = [0,0,0,0,0,0,0,0,0];
+var index1 = 0;
+var FCString = 'Fahrenheit';
+var ForC_Select = 0;
+
+var tempstr = "1,2,3,4,5"//this.responseText;
+var TestString="7,8,9,0,4";
+var result;
+
+/*
+var Datasetvar =
+	{
+	label       : TCLabelNamearr[index1],
+	borderColor : TraceColorarr[index1],
+	fill        : false,
+	lineTension : 0,
+	borderWidth : 2,
+	tdata        : TempDataarr[index1]
+	}
+*/
+
+
+var MAX_DATA_SET_LENGTH = 20;
+
+
+var canvas = document.getElementById('myChart');
+
+var data = 
+{
+  datasets: [{label: 'TC-1',borderColor: 'rgb(255,0,0)',fill: false,lineTension:0,borderWidth: 2},
+	{
+      label: 'TC-2',
+	  //fontSize: 26,
+      borderColor: 'rgb(0,255,0)',
+      fill: false,
+	  lineTension:0,
+      borderWidth: 2
+    },
+	{
+      label: 'TC-3',
+      borderColor: 'rgb(0,0,255)',
+      fill: false,
+	  lineTension:0,
+      borderWidth: 2
+    },
+	{
+      label: 'TC-4',
+      borderColor: 'rgb(128,32,16)',
+      fill: false,
+	  lineTension:0,
+      borderWidth: 2
+    },
+    {
+      label: 'TC-5',
+      borderColor: 'rgb(64,128,128)',
+      fill: false,
+	  lineTension:0,
+      borderWidth: 2
+    }
+  ]
+}
+
+
+var Foptions = {
+  scales: {
+    yAxes: [
+	{
+      type: 'linear',
+	  scaleLabel: 
+	  {
+        display: true,
+        labelString: 'Temperature = F',
+		fontSize: 16,
+		ticks: 
+        {
+            beginAtZero: true,
+            steps: 10,
+            stepValue: 5,
+            max: 200
+        }
+      }
+    }],
+
+    xAxes: [
+	{
+      type: 'time',
+	  scaleLabel: 
+	  {
+        display: true,
+        labelString: 'Sample Time',
+		fontSize: 16
+      },
+      ticks: 
+	  {
+        maxTicksLimit: 20,
+      },
+	  
+      time: 
+	  {
+        unit: 'second',
+        displayFormats: 
+		  {
+			  'second': 'HH:mm:ss',
+		  },
+        tooltipFormat: 'HH:mm:ss',
+      }
+    }]
+  },
+  showLines: true
+};
+
+var Coptions = {
+  scales: {
+    yAxes: [
+	{
+      type: 'linear',
+	  
+	  scaleLabel: 
+	  {
+        display: true,
+        labelString: 'Temperature = C',
+		fontSize: 16
+      }
+    }],
+
+    xAxes: [
+	{
+      type: 'time',
+	  scaleLabel: 
+	  {
+        display: true,
+        labelString: 'Sample Time',
+		fontSize: 16
+      },
+      ticks: 
+	  {
+        maxTicksLimit: 40,
+      },
+	  
+      time: 
+	  {
+        unit: 'second',
+        displayFormats: 
+		  {
+			  'second': 'HH:mm:ss',
+		  },
+        tooltipFormat: 'HH:mm:ss',
+      }
+    }]
+  },
+  showLines: true
+};
+
+var newdata = 1;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+function TCDasOnload() 
+{
+  myChart = new Chart.Line(canvas, 
+  {
+  data: data,
+  options: Foptions
+  });
+  
+  /*
+  for(index=0;index< ;index++)
+  {
+  myChart.data.datasets.push(Datasetvar);
+  index1 = index;
+  }
+  */
+  myChart.update();
+ 
+}
+//end of on load
+///////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////
+function adddata() 
+{
+  //for brevity use local var names
+  var datasets = myChart.data.datasets;
+  var labels = myChart.data.labels;
+  var didRemoveData = false;
+   
+   //once 40 points have been plotted start shifting first data out the left
+   //and new data into the right
+  if (datasets[0].data.length > MAX_DATA_SET_LENGTH) 
+  {
+    for(var a=0;a<5;a++)
+	  {
+	  //shift data left
+	  datasets[a].data.shift();
+	  }
+	  didRemoveData = true;
+  }
+	//shift the time left
+  if (didRemoveData) 
+  {
+    labels.shift();
+  }
+
+  //add new time to x axis
+  labels.push((new Date()).getTime());
+ 
+  //now add new y axis values
+  for(var a=0;a<5;a++)
+  {
+	datasets[a].data.push(TempData_arr[a]);
+  }
+  //finally update the chart
+  myChart.update();
+  
+   //now the gauges
+   var gauge = document.gauges[0];
+  var gauge1 = document.gauges[1];
+  var gauge2 = document.gauges[2];
+  var gauge3 = document.gauges[3];
+
+
+  gauge.value = TempData_arr[5];
+  gauge1.value = TempData_arr[6];
+  gauge2.value = TempData_arr[7];
+  gauge3.value = TempData_arr[8];
+  
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+//setInterval(AddTemperaturePoint, 1000);
+//setInterval(AdjustTemperaturePoint, 2000);
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('FCSelect').addEventListener('click', function() 
+		{
+			ForC_Select++;
+			ForC_Select&=1;
+			//toggleCheckbox(ForC_Select);
+			//SamplesPerSec=500;
+			//tempstr = "6,7,8,9,10"
+			
+			if(ForC_Select == 0)
+			{
+			
+				myChart = new Chart.Line(canvas, 
+				  {
+				  data: data,
+				  options: Foptions
+				  });
+				  //tempstr = "6,7.5,8,9,10"
+			}
+			else
+			{
+				//SamplesPerSec = 1000;
+				myChart = new Chart.Line(canvas, 
+				  {
+				  data: data,
+				  options: Coptions
+				  });
+				  //tempstr = "20,23,15.3,25,27"
+			}
+			myChart.update();	
+		});
+////////////////////////////////////////////////////////////////////////////////	
+
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('PrintSensorData').addEventListener('click', function() 
+		{
+			SerialPrintFlags &= 0x1e;
+			PrintSensorFlag++;
+			PrintSensorFlag &= 1;
+			if(PrintSensorFlag == 1)
+			{
+			  SerialPrintFlags |= 1;
+			}
+			
+			SendPrintDataInfo();
+		});
+///////////////////////////////////////////////////////////////////////////////	
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('PrintBatteryVData').addEventListener('click', function() 
+		{
+			SerialPrintFlags &= 0x1d;
+			PrintBatteryVFlag++;
+			PrintBatteryVFlag &= 1;
+			
+			if(PrintBatteryVFlag == 1)
+			{
+			  SerialPrintFlags |= 2;
+			}
+			
+			SendPrintDataInfo();
+		});
+///////////////////////////////////////////////////////////////////////////////	
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('PrintBatteryIData').addEventListener('click', function() 
+		{
+			SerialPrintFlags &= 0x1b;
+			PrintBatteryIFlag++;
+			PrintBatteryIFlag &= 1;
+			
+			if(PrintBatteryIFlag == 1)
+			{
+			  SerialPrintFlags |= 4;
+			}
+			
+			SendPrintDataInfo();
+		});
+///////////////////////////////////////////////////////////////////////////////	
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('PrintHumidityData').addEventListener('click', function() 
+		{
+			SerialPrintFlags &= 0x17;
+			PrintHumidityFlag++;
+			PrintHumidityFlag &= 1;
+			if(PrintHumidityFlag == 1)
+			{
+			  SerialPrintFlags |= 8;
+			}
+			
+			SendPrintDataInfo();
+		});
+///////////////////////////////////////////////////////////////////////////////	
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('PrintElapsedTimeData').addEventListener('click', function() 
+		{
+			SerialPrintFlags &= 0xf;
+			PrintElapsedTimeFlag++;
+			PrintElapsedTimeFlag &= 1;
+			if(PrintElapsedTimeFlag == 1)
+			{
+			  SerialPrintFlags |= 0x10;
+			}
+			SendPrintDataInfo();
+		});
+///////////////////////////////////////////////////////////////////////////////		
+function SendPrintDataInfo() 
+{
+  var xhrflag = new XMLHttpRequest();
+   xhrflag.open("GET", "/setflags?flag1="+SerialPrintFlags, true);
+				
+  xhrflag.send();
+}		
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////
+document.getElementById('RGBUpdate').addEventListener('click', function() 
+		{
+			SendRGBLedMinMaxInfo();
+		});
+		
+function SendRGBLedMinMaxInfo() 
+{
+  var xhr = new XMLHttpRequest();
+   xhr.open("GET", "/update?RGBLedHigh="+TempIndicatorHigh+"&RGBLedLow="+TempIndicatorLow, true);
+  xhr.send();
+}		
+////////////////////////////////////////////////////////////////////////////////		
+		
+		
+setInterval(function ( ) 
+{
+var ftoctemp;
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() 
+  {
+    if (this.readyState == 4 && this.status == 200) 
+	{
+		var x = (new Date()).getTime();
+		var y;
+
+		var tempstr = this.responseText;
+		var result = tempstr.split(",");
+	
+		  for (var index1 = 0;index1 < 9; index1++)
+			{	   
+			 TempData_arr[index1] = parseFloat(result[index1]);
+			 
+			 if(ForC_Select ==1 && index1 <5)
+			 {
+			 ftoctemp = (TempData_arr[index1]-32) * .5556; 
+			 TempData_arr[index1] = ftoctemp;
+				
+			 }
+			 
+			 
+			}
+		  
+		  adddata();
+
+    }
+  };
+  xhttp.open("GET", "/temperature", true);
+  xhttp.send();
+}, 1000 ) ;		
+		
+	</script>
+</body>
+</html>
